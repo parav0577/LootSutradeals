@@ -1,0 +1,38 @@
+import requests
+from bs4 import BeautifulSoup
+from telegram import Bot
+import time
+
+BOT_TOKEN = '8334913757:AAHoiSOKGN0uNoQIXxUqdJ_GZOBeK7XZ3-A'
+CHANNEL_USERNAME = '@LootSutraDealBot'
+AFFILIATE_TAG = 'lootsutradeals-21'
+
+bot = Bot(token=BOT_TOKEN)
+
+def get_deals():
+    url = 'https://pricehistoryapp.com/deals'
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    deals = soup.find_all('div', class_='deal-card')
+    
+    deal_list = []
+    for deal in deals[:5]:  # Take top 5 deals
+        title = deal.find('h4').text.strip()
+        link = deal.find('a')['href']
+        link_with_tag = link + f'?tag={AFFILIATE_TAG}'  # Add affiliate tag
+        deal_list.append((title, link_with_tag))
+    return deal_list
+
+def post_to_telegram():
+    deals = get_deals()
+    for title, link in deals:
+        message = f"🔥 {title}\n🔗 [Buy Now]({link})"
+        try:
+            bot.send_message(chat_id=CHANNEL_USERNAME, text=message, parse_mode='Markdown')
+        except Exception as e:
+            print("Error sending:", e)
+
+# Run every 2 hours
+while True:
+    post_to_telegram()
+    time.sleep(7200)
